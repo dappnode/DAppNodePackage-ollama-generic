@@ -1,0 +1,19 @@
+version: "3.5"
+services:
+  ollama:
+    build:
+      context: ollama
+      args:
+        OLLAMA_VERSION: v0.17.7
+    container_name: ollama.ollama.dnp.dappnode.eth
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+    environment:
+      - OLLAMA_LOG_LEVEL=debug
+      - OLLAMA_METRICS=1
+      - OLLAMA_LOG_FORMAT=json
+      - OLLAMA_TELEMETRY=0
+      - OLLAMA_CONTEXT_LENGTH=64000
+volumes:
+  ollama: {}

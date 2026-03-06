@@ -1,0 +1,5 @@
+{
+  "name": "ollama-amd.dnp.dappnode.eth",
+  "version": "0.1.0",
+  "description": "Run large language models locally on your DAppNode with GPU acceleration. Ollama with AMD ROCm support for GPU inference.\n\n**Features:**\n- AMD GPU acceleration via ROCm\n- Complete privacy - all processing stays local\n- Support for multiple LLM models (Llama, Mistral, CodeLlama, etc.)\n\n**Requirements:**\n- AMD GPU with ROCm support\n- At least 8GB RAM (16GB+ recommended)\n- Sufficient storage for models (10GB+ recommended)\n"
+}

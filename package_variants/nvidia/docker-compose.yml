@@ -1,0 +1,14 @@
+version: "3.5"
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    build:
+      context: ollama
+    container_name: ollama.ollama-nvidia.dnp.dappnode.eth

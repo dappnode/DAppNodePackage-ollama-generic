@@ -1,0 +1,12 @@
+version: "3.5"
+
+services:
+  ollama:
+    build:
+      context: ollama
+      args:
+        OLLAMA_SUFFIX: -rocm
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    container_name: ollama.ollama-amd.dnp.dappnode.eth

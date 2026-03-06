@@ -1,0 +1,18 @@
+{
+  "name": "ollama.dnp.dappnode.eth",
+  "version": "0.1.0",
+  "upstream": [
+    {
+      "repo": "ollama/ollama",
+      "version": "v0.17.7",
+      "arg": "OLLAMA_VERSION"
+    }
+  ],
+  "shortDescription": "Local LLM inference engine with GPU acceleration",
+  "description": "Run large language models locally on your DAppNode with GPU acceleration. Ollama provides a fast and efficient LLM inference engine with AMD ROCm support.\n\n**Features:**\n- AMD GPU acceleration via ROCm\n- Complete privacy - all processing stays local\n- Support for multiple LLM models (Llama, Mistral, CodeLlama, etc.)\n\n**Requirements:**\n- AMD GPU with ROCm support\n- At least 8GB RAM (16GB+ recommended)\n- Sufficient storage for models (10GB+ recommended)",
+  "type": "service",
+  "author": "DAppNode Association <admin@dappnode.io> (https://github.com/dappnode)",
+  "license": "GPL-3.0",
+  "categories": ["AI"],
+  "architectures": ["linux/amd64"]
+}
