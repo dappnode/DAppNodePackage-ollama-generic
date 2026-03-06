@@ -14,5 +14,8 @@
   "author": "DAppNode Association <admin@dappnode.io> (https://github.com/dappnode)",
   "license": "GPL-3.0",
   "categories": ["AI"],
+  "links": {
+    "Models": "https://ollama.com/library"
+  },
   "architectures": ["linux/amd64"]
 }
