@@ -15,5 +15,10 @@ services:
       - OLLAMA_LOG_FORMAT=json
       - OLLAMA_TELEMETRY=0
       - OLLAMA_CONTEXT_LENGTH=64000
+  ui:
+    build:
+      context: ui
+    container_name: ui.ollama.dnp.dappnode.eth
+    restart: unless-stopped
 volumes:
   ollama: {}

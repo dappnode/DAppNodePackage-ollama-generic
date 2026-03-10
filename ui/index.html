@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ollama - Model Manager</title>
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1b23;
+      --surface2: #24252e;
+      --border: #2e2f3a;
+      --text: #e4e4e7;
+      --text2: #a1a1aa;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --danger: #ef4444;
+      --danger-hover: #f87171;
+      --success: #22c55e;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header h1 .logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      object-fit: contain;
+    }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text2);
+    }
+
+    .stats .stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .stats .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    .stats .dot.off {
+      background: var(--danger);
+    }
+
+    /* Pull section */
+    .pull-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .pull-section h2 {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--text2);
+    }
+
+    .pull-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .pull-row input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .pull-row input:focus {
+      border-color: var(--accent);
+    }
+
+    .pull-row input::placeholder {
+      color: #52525b;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      margin-top: 14px;
+      display: none;
+    }
+
+    .progress-container.active {
+      display: block;
+    }
+
+    .progress-status {
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .progress-bar-bg {
+      background: var(--bg);
+      border-radius: 6px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 6px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    /* Models list */
+    .models-section h2 {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text2);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .models-section h2 .count {
+      font-size: 12px;
+      background: var(--surface2);
+      padding: 2px 10px;
+      border-radius: 12px;
+    }
+
+    .model-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: border-color 0.2s;
+    }
+
+    .model-card:hover {
+      border-color: #3e3f4a;
+    }
+
+    .model-info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .model-name {
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .model-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text2);
+      flex-wrap: wrap;
+    }
+
+    .model-meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .model-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-left: 16px;
+      flex-shrink: 0;
+    }
+
+    .running-badge {
+      font-size: 11px;
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text2);
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .empty-state .icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+      opacity: 0.5;
+    }
+
+    /* Toast notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      animation: slideIn 0.3s ease;
+      max-width: 350px;
+    }
+
+    .toast.error {
+      border-color: var(--danger);
+    }
+
+    .toast.success {
+      border-color: var(--success);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Confirm dialog */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .dialog {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .dialog h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .dialog p {
+      font-size: 14px;
+      color: var(--text2);
+      margin-bottom: 20px;
+    }
+
+    .dialog-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: var(--surface2);
+    }
+
+    /* Available models catalog */
+    .catalog-section {
+      margin-bottom: 24px;
+    }
+
+    .catalog-section h2 {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text2);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .catalog-search {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .catalog-search input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .catalog-search input:focus { border-color: var(--accent); }
+    .catalog-search input::placeholder { color: #52525b; }
+
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .catalog-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .catalog-card:hover { border-color: #3e3f4a; }
+
+    .catalog-card-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .catalog-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .catalog-card-name {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .catalog-card-name .installed-check {
+      color: var(--success);
+      font-size: 12px;
+    }
+
+    .catalog-card-desc {
+      font-size: 12px;
+      color: var(--text2);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .catalog-card-meta {
+      font-size: 11px;
+      color: #52525b;
+      margin-top: 4px;
+    }
+
+    .expand-arrow {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text2);
+      transition: transform 0.2s;
+      font-size: 12px;
+    }
+
+    .catalog-card.expanded .expand-arrow {
+      transform: rotate(180deg);
+    }
+
+    /* Tags panel */
+    .tags-panel {
+      display: none;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .catalog-card.expanded .tags-panel {
+      display: block;
+    }
+
+    .tags-loading {
+      padding: 16px;
+      text-align: center;
+      color: var(--text2);
+      font-size: 13px;
+    }
+
+    .tags-list {
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .tag-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+      font-size: 13px;
+    }
+
+    .tag-row:last-child {
+      border-bottom: none;
+    }
+
+    .tag-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tag-name {
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tag-size {
+      color: var(--text2);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .tag-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .tag-installed {
+      color: var(--success);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .btn-pull {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      font-size: 12px;
+    }
+
+    .btn-pull:hover {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: white;
+    }
+
+    .catalog-loading, .catalog-error {
+      text-align: center;
+      padding: 24px;
+      color: var(--text2);
+      font-size: 13px;
+    }
+
+    .catalog-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--text2);
+    }
+
+    .catalog-pagination button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      border-radius: 6px;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .catalog-pagination button:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .catalog-pagination button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>
+        <img class="logo" src="/favicon.png" alt="Ollama">
+        Ollama
+      </h1>
+      <div class="stats">
+        <div class="stat">
+          <span class="dot" id="statusDot"></span>
+          <span id="statusText">Checking...</span>
+        </div>
+        <div class="stat" id="vramStat" style="display:none"></div>
+      </div>
+    </header>
+
+    <div class="pull-section">
+      <h2>Pull a model</h2>
+      <div class="pull-row">
+        <input type="text" id="pullInput" placeholder="Enter model name, e.g. llama3.2, mistral, gemma3:4b" />
+        <button class="btn btn-primary" id="pullBtn" onclick="pullModel()">Pull</button>
+      </div>
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-status">
+          <span id="progressStatus">Downloading...</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="models-section">
+      <h2>
+        Installed models
+        <span class="count" id="modelCount">0</span>
+      </h2>
+      <div id="modelsList"></div>
+    </div>
+
+    <div class="catalog-section">
+      <h2>Available models <a href="https://ollama.com/search" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none">ollama.com</a></h2>
+      <div class="catalog-search">
+        <input type="text" id="catalogSearch" placeholder="Search models..." />
+      </div>
+      <div id="catalogList"></div>
+      <div class="catalog-pagination" id="catalogPagination"></div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <div id="dialogContainer"></div>
+
+  <script>
+    const API = '/api';
+    let runningModels = new Set();
+    let installedModelNames = new Set();
+    let catalogCache = [];
+    let catalogQuery = '';
+    let catalogPage = 1;
+    const CATALOG_PER_PAGE = 10;
+    const tagsCacheMap = {}; // modelName -> [{tag, size}]
+
+    // --- Init ---
+    async function init() {
+      await checkStatus();
+      await loadModels();
+      loadCatalog();
+      setInterval(() => { checkStatus(); loadModels(); }, 10000);
+
+      let searchTimeout;
+      document.getElementById('catalogSearch').addEventListener('input', e => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          catalogQuery = e.target.value.trim();
+          catalogPage = 1;
+          loadCatalog();
+        }, 300);
+      });
+    }
+
+    // --- Catalog (from ollama.com) ---
+    async function loadCatalog() {
+      const list = document.getElementById('catalogList');
+      const pagination = document.getElementById('catalogPagination');
+      list.innerHTML = '<div class="catalog-loading"><span class="spinner"></span> Loading models from ollama.com...</div>';
+      pagination.innerHTML = '';
+
+      try {
+        const url = catalogQuery
+          ? `/ollama-search?q=${encodeURIComponent(catalogQuery)}`
+          : '/ollama-search';
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const html = await res.text();
+        const parsed = parseCatalogHTML(html);
+        if (parsed.length > 0) {
+          catalogCache = parsed;
+        } else {
+          catalogCache = filterFallback(catalogQuery);
+        }
+        renderCatalog();
+      } catch (e) {
+        catalogCache = filterFallback(catalogQuery);
+        renderCatalog();
+      }
+    }
+
+    // Fallback curated list when ollama.com is unreachable
+    const FALLBACK_MODELS = [
+      { name: 'llama3.2', desc: 'Meta Llama 3.2 - lightweight model for diverse tasks', pulls: '' },
+      { name: 'llama3.3', desc: 'Meta Llama 3.3 - 70B instruction-tuned model', pulls: '' },
+      { name: 'gemma3', desc: 'Google Gemma 3 - lightweight open model', pulls: '' },
+      { name: 'qwen3', desc: 'Alibaba Qwen 3 - multilingual model family', pulls: '' },
+      { name: 'qwen3.5', desc: 'Qwen 3.5 - open-source multimodal family', pulls: '' },
+      { name: 'deepseek-r1', desc: 'DeepSeek R1 - reasoning-focused model', pulls: '' },
+      { name: 'mistral', desc: 'Mistral 7B - efficient general-purpose model', pulls: '' },
+      { name: 'phi4', desc: 'Microsoft Phi-4 - compact powerful model', pulls: '' },
+      { name: 'codellama', desc: 'Meta Code Llama - code generation model', pulls: '' },
+      { name: 'qwen3-coder-next', desc: 'Coding-focused model for agentic workflows', pulls: '' },
+      { name: 'granite4', desc: 'IBM Granite 4 - enterprise instruction following', pulls: '' },
+      { name: 'devstral-small-2', desc: '24B model for codebase exploration and engineering', pulls: '' },
+      { name: 'qwen3-vl', desc: 'Qwen vision-language model', pulls: '' },
+      { name: 'llava', desc: 'LLaVA - multimodal vision model', pulls: '' },
+      { name: 'nomic-embed-text', desc: 'Text embeddings model', pulls: '' },
+      { name: 'nemotron-3-nano', desc: 'NVIDIA efficient agentic model', pulls: '' },
+      { name: 'ministral-3', desc: 'Mistral edge deployment family', pulls: '' },
+      { name: 'deepseek-ocr', desc: 'Token-efficient OCR vision-language model', pulls: '' },
+      { name: 'lfm2', desc: 'Hybrid models for on-device deployment', pulls: '' },
+      { name: 'olmo-3', desc: 'Open language models for research', pulls: '' },
+    ];
+
+    function filterFallback(query) {
+      if (!query) return FALLBACK_MODELS;
+      const q = query.toLowerCase();
+      return FALLBACK_MODELS.filter(m =>
+        m.name.toLowerCase().includes(q) || m.desc.toLowerCase().includes(q)
+      );
+    }
+
+    function parseCatalogHTML(html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const models = [];
+      const seen = new Set();
+
+      // Strategy 1: find all links pointing to /library/{model}
+      doc.querySelectorAll('a[href*="/library/"]').forEach(a => {
+        const href = a.getAttribute('href');
+        const match = href.match(/\/library\/([^\/\?#]+)/);
+        if (!match) return;
+        const name = match[1];
+        if (seen.has(name)) return;
+        seen.add(name);
+
+        const card = a.closest('li') || a.closest('div') || a;
+        const allText = card.textContent || '';
+
+        let desc = '';
+        const pEl = card.querySelector('p');
+        if (pEl) desc = pEl.textContent.trim();
+
+        let pulls = '';
+        const pullMatch = allText.match(/([\d.]+[KMB]?\s*Pulls?)/i);
+        if (pullMatch) pulls = pullMatch[1];
+
+        models.push({ name, desc, pulls });
+      });
+
+      // Strategy 2: search result IDs
+      if (models.length === 0) {
+        doc.querySelectorAll('[id^="searchresult"]').forEach(item => {
+          const nameEl = item.querySelector('h2') || item.querySelector('[class*="name"]');
+          const descEl = item.querySelector('p');
+          if (!nameEl) return;
+          const name = nameEl.textContent.trim();
+          if (seen.has(name)) return;
+          seen.add(name);
+          models.push({
+            name,
+            desc: descEl ? descEl.textContent.trim() : '',
+            pulls: ''
+          });
+        });
+      }
+
+      return models;
+    }
+
+    function renderCatalog() {
+      const list = document.getElementById('catalogList');
+      const pagination = document.getElementById('catalogPagination');
+      const models = catalogCache;
+
+      if (models.length === 0) {
+        list.innerHTML = '<div class="catalog-error">No models found</div>';
+        pagination.innerHTML = '';
+        return;
+      }
+
+      const totalPages = Math.ceil(models.length / CATALOG_PER_PAGE);
+      if (catalogPage > totalPages) catalogPage = totalPages;
+      const start = (catalogPage - 1) * CATALOG_PER_PAGE;
+      const pageModels = models.slice(start, start + CATALOG_PER_PAGE);
+
+      list.innerHTML = '<div class="catalog-grid">' + pageModels.map(m => {
+        const isInstalled = installedModelNames.has(m.name) ||
+          [...installedModelNames].some(n => n.startsWith(m.name + ':'));
+        const isExpanded = document.querySelector(`.catalog-card[data-model="${m.name}"]`)?.classList.contains('expanded');
+        return `
+          <div class="catalog-card${isExpanded ? ' expanded' : ''}" data-model="${esc(m.name)}">
+            <div class="catalog-card-header" onclick="toggleTags('${esc(m.name)}')">
+              <div class="catalog-card-info">
+                <div class="catalog-card-name">
+                  ${esc(m.name)}
+                  ${isInstalled ? '<span class="installed-check">&#10003;</span>' : ''}
+                </div>
+                ${m.desc ? `<div class="catalog-card-desc">${esc(m.desc)}</div>` : ''}
+                ${m.pulls ? `<div class="catalog-card-meta">${esc(m.pulls)}</div>` : ''}
+              </div>
+              <div class="expand-arrow">&#9660;</div>
+            </div>
+            <div class="tags-panel" id="tags-${CSS.escape(m.name)}">
+              <div class="tags-loading"><span class="spinner"></span> Loading tags...</div>
+            </div>
+          </div>`;
+      }).join('') + '</div>';
+
+      // Re-expand previously expanded cards and reload their tags
+      pageModels.forEach(m => {
+        const card = document.querySelector(`.catalog-card[data-model="${m.name}"]`);
+        if (card && card.classList.contains('expanded') && tagsCacheMap[m.name]) {
+          renderTags(m.name, tagsCacheMap[m.name]);
+        }
+      });
+
+      if (totalPages > 1) {
+        pagination.innerHTML = `
+          <button ${catalogPage <= 1 ? 'disabled' : ''} onclick="catalogPrev()">Prev</button>
+          <span>Page ${catalogPage} of ${totalPages}</span>
+          <button ${catalogPage >= totalPages ? 'disabled' : ''} onclick="catalogNext()">Next</button>`;
+      } else {
+        pagination.innerHTML = '';
+      }
+    }
+
+    // --- Tags loading ---
+    async function toggleTags(modelName) {
+      const card = document.querySelector(`.catalog-card[data-model="${modelName}"]`);
+      if (!card) return;
+
+      if (card.classList.contains('expanded')) {
+        card.classList.remove('expanded');
+        return;
+      }
+
+      card.classList.add('expanded');
+
+      // If already cached, render immediately
+      if (tagsCacheMap[modelName]) {
+        renderTags(modelName, tagsCacheMap[modelName]);
+        return;
+      }
+
+      // Fetch tags from ollama.com
+      try {
+        const res = await fetch(`/ollama-library/${encodeURIComponent(modelName)}/tags`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const html = await res.text();
+        const tags = parseTagsHTML(html, modelName);
+        tagsCacheMap[modelName] = tags;
+        renderTags(modelName, tags);
+      } catch (e) {
+        const panel = document.getElementById(`tags-${CSS.escape(modelName)}`);
+        if (panel) {
+          panel.innerHTML = `<div class="tags-loading" style="color:var(--danger)">Failed to load tags</div>`;
+        }
+      }
+    }
+
+    function parseTagsHTML(html, modelName) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const tags = [];
+      const seen = new Set();
+
+      // Look for links to /library/{model}:{tag} or tag-like patterns
+      doc.querySelectorAll('a[href]').forEach(a => {
+        const href = a.getAttribute('href') || '';
+        // Match /library/modelName/:tag pattern
+        const pattern = new RegExp(`/library/${modelName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?::([^/\\s]+))?$`);
+        const match = href.match(pattern);
+        if (!match) return;
+
+        const tag = match[1] || 'latest';
+        if (seen.has(tag)) return;
+        seen.add(tag);
+
+        // Try to get size from sibling/parent text
+        const container = a.closest('div') || a.closest('li') || a;
+        const text = container.textContent || '';
+
+        let size = '';
+        const sizeMatch = text.match(/([\d.]+\s*(?:GB|MB|KB|TB))/i);
+        if (sizeMatch) size = sizeMatch[1];
+
+        tags.push({ tag, size });
+      });
+
+      // If no tags found, add a default 'latest'
+      if (tags.length === 0) {
+        tags.push({ tag: 'latest', size: '' });
+      }
+
+      return tags;
+    }
+
+    function renderTags(modelName, tags) {
+      const panel = document.getElementById(`tags-${CSS.escape(modelName)}`);
+      if (!panel) return;
+
+      if (tags.length === 0) {
+        panel.innerHTML = '<div class="tags-loading">No tags found</div>';
+        return;
+      }
+
+      panel.innerHTML = `<div class="tags-list">${tags.map(t => {
+        const fullName = `${modelName}:${t.tag}`;
+        const isInstalled = installedModelNames.has(fullName) ||
+          (t.tag === 'latest' && installedModelNames.has(modelName));
+        return `
+          <div class="tag-row">
+            <div class="tag-info">
+              <span class="tag-name">${esc(t.tag)}</span>
+              ${t.size ? `<span class="tag-size">${esc(t.size)}</span>` : ''}
+            </div>
+            <div class="tag-status">
+              ${isInstalled ? '<span class="tag-installed">&#10003; installed</span>' : ''}
+              <button class="btn btn-pull btn-sm" onclick="pullTag('${esc(modelName)}','${esc(t.tag)}')">Pull</button>
+            </div>
+          </div>`;
+      }).join('')}</div>`;
+    }
+
+    function pullTag(modelName, tag) {
+      const fullName = `${modelName}:${tag}`;
+      document.getElementById('pullInput').value = fullName;
+      pullModel();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function catalogPrev() { if (catalogPage > 1) { catalogPage--; renderCatalog(); } }
+    function catalogNext() { catalogPage++; renderCatalog(); }
+
+    // --- Status ---
+    async function checkStatus() {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      try {
+        const res = await fetch(API + '/tags');
+        if (res.ok) {
+          dot.className = 'dot';
+          text.textContent = 'Connected';
+        } else { throw new Error(); }
+      } catch {
+        dot.className = 'dot off';
+        text.textContent = 'Disconnected';
+      }
+      // Check running models
+      try {
+        const res = await fetch(API + '/ps');
+        const data = await res.json();
+        runningModels = new Set((data.models || []).map(m => m.name));
+      } catch { runningModels = new Set(); }
+    }
+
+    // --- Load models ---
+    async function loadModels() {
+      const list = document.getElementById('modelsList');
+      const countEl = document.getElementById('modelCount');
+      try {
+        const res = await fetch(API + '/tags');
+        const data = await res.json();
+        const models = data.models || [];
+        installedModelNames = new Set(models.map(m => m.name));
+        countEl.textContent = models.length;
+
+        if (models.length === 0) {
+          list.innerHTML = `
+            <div class="empty-state">
+              <img src="/favicon.png" alt="" style="width:48px;opacity:0.5;margin-bottom:8px">
+              <strong>No models installed</strong>
+              <p>Pull a model above to get started</p>
+            </div>`;
+          return;
+        }
+
+        // Sort by name
+        models.sort((a, b) => a.name.localeCompare(b.name));
+
+        list.innerHTML = models.map(m => {
+          const size = formatSize(m.size);
+          const quantization = m.details?.quantization_level || '';
+          const family = m.details?.family || '';
+          const params = m.details?.parameter_size || '';
+          const isRunning = runningModels.has(m.name);
+
+          return `
+            <div class="model-card">
+              <div class="model-info">
+                <div class="model-name">${esc(m.name)}</div>
+                <div class="model-meta">
+                  <span>${size}</span>
+                  ${params ? `<span>${esc(params)}</span>` : ''}
+                  ${family ? `<span>${esc(family)}</span>` : ''}
+                  ${quantization ? `<span>${esc(quantization)}</span>` : ''}
+                </div>
+              </div>
+              <div class="model-actions">
+                ${isRunning ? '<span class="running-badge">running</span>' : ''}
+                <button class="btn btn-danger btn-sm" onclick="confirmDelete('${esc(m.name)}')">Delete</button>
+              </div>
+            </div>`;
+        }).join('');
+      } catch {
+        list.innerHTML = `
+          <div class="empty-state">
+            <strong>Cannot connect to Ollama</strong>
+            <p>Make sure the Ollama service is running</p>
+          </div>`;
+        countEl.textContent = '\u2014';
+      }
+    }
+
+    // --- Pull model ---
+    async function pullModel() {
+      const input = document.getElementById('pullInput');
+      const btn = document.getElementById('pullBtn');
+      const name = input.value.trim();
+      if (!name) return;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Pulling';
+      showProgress(true);
+      updateProgress('Starting...', 0);
+
+      try {
+        const res = await fetch(API + '/pull', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, stream: true })
+        });
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const json = JSON.parse(line);
+              if (json.error) {
+                throw new Error(json.error);
+              }
+              if (json.total && json.completed) {
+                const pct = Math.round((json.completed / json.total) * 100);
+                updateProgress(json.status || 'Downloading...', pct);
+              } else {
+                updateProgress(json.status || 'Processing...', -1);
+              }
+            } catch (e) {
+              if (e.message && !e.message.includes('JSON')) throw e;
+            }
+          }
+        }
+
+        toast(`Model "${name}" pulled successfully`, 'success');
+        input.value = '';
+        await loadModels();
+        renderCatalog();
+      } catch (e) {
+        toast(`Failed to pull "${name}": ${e.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Pull';
+        showProgress(false);
+      }
+    }
+
+    // --- Delete model ---
+    function confirmDelete(name) {
+      const container = document.getElementById('dialogContainer');
+      container.innerHTML = `
+        <div class="overlay" onclick="closeDialog(event)">
+          <div class="dialog" onclick="event.stopPropagation()">
+            <h3>Delete model</h3>
+            <p>Are you sure you want to delete <strong>${esc(name)}</strong>? This cannot be undone.</p>
+            <div class="dialog-actions">
+              <button class="btn btn-ghost btn-sm" onclick="closeDialog()">Cancel</button>
+              <button class="btn btn-danger" onclick="deleteModel('${esc(name)}')">Delete</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function closeDialog(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('dialogContainer').innerHTML = '';
+    }
+
+    async function deleteModel(name) {
+      closeDialog();
+      try {
+        const res = await fetch(API + '/delete', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+        toast(`Model "${name}" deleted`, 'success');
+        await loadModels();
+        renderCatalog();
+      } catch (e) {
+        toast(`Failed to delete: ${e.message}`, 'error');
+      }
+    }
+
+    // --- Progress ---
+    function showProgress(show) {
+      document.getElementById('progressContainer').classList.toggle('active', show);
+    }
+
+    function updateProgress(status, pct) {
+      document.getElementById('progressStatus').textContent = status;
+      if (pct >= 0) {
+        document.getElementById('progressPct').textContent = pct + '%';
+        document.getElementById('progressBar').style.width = pct + '%';
+      } else {
+        document.getElementById('progressPct').textContent = '';
+        document.getElementById('progressBar').style.width = '100%';
+      }
+    }
+
+    // --- Toast ---
+    function toast(msg, type = '') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = 'toast ' + type;
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => { el.remove(); }, 4000);
+    }
+
+    // --- Helpers ---
+    function formatSize(bytes) {
+      if (!bytes) return '\u2014';
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      let i = 0;
+      let size = bytes;
+      while (size >= 1024 && i < units.length - 1) { size /= 1024; i++; }
+      return size.toFixed(1) + ' ' + units[i];
+    }
+
+    function esc(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    // Allow Enter key to pull
+    document.getElementById('pullInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') pullModel();
+    });
+
+    init();
+  </script>
+</body>
+
+</html>
