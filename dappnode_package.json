@@ -4,7 +4,7 @@
   "upstream": [
     {
       "repo": "ollama/ollama",
-      "version": "v0.17.7",
+      "version": "v0.18.1",
       "arg": "OLLAMA_VERSION"
     }
   ],
@@ -14,13 +14,9 @@
   "type": "service",
   "author": "DAppNode Association <admin@dappnode.io> (https://github.com/dappnode)",
   "license": "GPL-3.0",
-  "categories": [
-    "AI"
-  ],
+  "categories": ["AI"],
   "links": {
     "Models library": "https://ollama.com/library"
   },
-  "architectures": [
-    "linux/amd64"
-  ]
+  "architectures": ["linux/amd64"]
 }
