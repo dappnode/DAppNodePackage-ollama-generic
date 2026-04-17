@@ -4,7 +4,7 @@ services:
     build:
       context: ollama
       args:
-        OLLAMA_VERSION: v0.20.6
+        OLLAMA_VERSION: v0.21.0
     container_name: ollama.ollama.dnp.dappnode.eth
     volumes:
       - ollama:/root/.ollama

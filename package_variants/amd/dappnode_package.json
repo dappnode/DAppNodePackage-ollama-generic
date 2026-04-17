@@ -1,6 +1,6 @@
 {
   "name": "ollama-amd.dnp.dappnode.eth",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "links": {
     "Model Manager": "http://ui.ollama-amd.dappnode",
     "api": "http://ollama-amd.dappnode:11434"
