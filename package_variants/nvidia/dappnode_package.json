@@ -1,6 +1,6 @@
 {
   "name": "ollama-nvidia.dnp.dappnode.eth",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "links": {
     "Model Manager": "http://ui.ollama-nvidia.dappnode",
     "api": "http://ollama-nvidia.dappnode:11434"
