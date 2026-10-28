@@ -5,6 +5,7 @@ Now you can:
 - Open the **Model Manager** from your package links to browse, pull, and manage your models.
 - Browse the full [Ollama model library](https://ollama.com/library) to find models.
 - Use the Ollama API to integrate with your apps.
+- Run Jev-style decisions locally: choose a label, estimate a yes/no probability, or score text against a rubric.
 
 ### Quick start
 
@@ -31,6 +32,16 @@ curl http://<ollama-api-url>:11434/api/tags
 ### Connecting other apps
 
 Point any Ollama-compatible app (Open WebUI, OpenClaw, etc.) to the API URL shown in your package links.
+
+### Decision models (System One)
+
+Use **Decision models only** in Model Manager to filter the catalog. Decision models show a **decision** badge; installed models are identified through their reported capabilities.
+
+Pull a compatible model such as `tev1:0.8b`, `tev1`, `nimble`, `clef`, or `clef-flash`, then use **`POST /v1/systemone`** from your application for choices, yes/no probabilities, and scoring. This is the Jev-compatible API for supported Ollama models; it does not install TypeSafe's hosted Jev model.
+
+The endpoint is available directly at `http://ollama-<variant>.dappnode:11434/v1/systemone` and through Model Manager at `http://ui.ollama-<variant>.dappnode/v1/systemone`. Replace `<variant>` with `cpu`, `amd`, or `nvidia`. Local requests do not require an API key.
+
+See the [decision guide](https://docs.ollama.com/capabilities/decision) and [System One API reference](https://docs.ollama.com/api/systemone) for request formats and limits.
 
 ### Resources
 
