@@ -642,6 +642,24 @@
       opacity: 0.3;
       cursor: not-allowed;
     }
+    .decision-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent-hover);
+      background: var(--surface2);
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+
+    .decision-filter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text2);
+      margin: 0 0 14px;
+    }
   </style>
 </head>
 
@@ -691,6 +709,7 @@
       <div class="catalog-search">
         <input type="text" id="catalogSearch" placeholder="Search models..." />
       </div>
+      <label class="decision-filter"><input type="checkbox" id="decisionCatalogOnly"> Decision models only</label>
       <div id="catalogList"></div>
       <div class="catalog-pagination" id="catalogPagination"></div>
     </div>
@@ -703,6 +722,7 @@
     const API = '/api';
     let runningModels = new Set();
     let installedModelNames = new Set();
+    const decisionCapabilities = new Map();
     let catalogCache = [];
     let catalogQuery = '';
     let catalogPage = 1;
@@ -710,10 +730,14 @@
     const tagsCacheMap = {}; // modelName -> [{tag, size}]
 
     // --- Init ---
-    async function init() {
-      await checkStatus();
-      await loadModels();
+    function init() {
+      checkStatus();
+      loadModels();
       loadCatalog();
+      document.getElementById('decisionCatalogOnly').addEventListener('change', () => {
+        catalogPage = 1;
+        loadCatalog();
+      });
       setInterval(() => { checkStatus(); loadModels(); }, 10000);
 
       let searchTimeout;
@@ -735,10 +759,11 @@
       pagination.innerHTML = '';
 
       try {
-        const url = catalogQuery
-          ? `/ollama-search?q=${encodeURIComponent(catalogQuery)}`
-          : '/ollama-search';
-        const res = await fetch(url);
+        const params = new URLSearchParams();
+        if (catalogQuery) params.set('q', catalogQuery);
+        if (document.getElementById('decisionCatalogOnly').checked) params.set('c', 'decision');
+        const url = '/ollama-search?' + params.toString();
+        const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const html = await res.text();
         const parsed = parseCatalogHTML(html);
@@ -756,6 +781,10 @@
 
     // Fallback curated list when ollama.com is unreachable
     const FALLBACK_MODELS = [
+      { name: 'tev1', desc: 'Together AI decision models for classification, yes/no probabilities, and scoring', pulls: '', decision: true },
+      { name: 'nimble', desc: 'Bespoke Labs 9B model for typed decisions', pulls: '', decision: true },
+      { name: 'clef', desc: 'Cloudflare decision model with image input support', pulls: '', decision: true },
+      { name: 'clef-flash', desc: 'Compact decision model with image input support', pulls: '', decision: true },
       { name: 'llama3.2', desc: 'Meta Llama 3.2 - lightweight model for diverse tasks', pulls: '' },
       { name: 'llama3.3', desc: 'Meta Llama 3.3 - 70B instruction-tuned model', pulls: '' },
       { name: 'gemma3', desc: 'Google Gemma 3 - lightweight open model', pulls: '' },
@@ -779,9 +808,11 @@
     ];
 
     function filterFallback(query) {
-      if (!query) return FALLBACK_MODELS;
+      const models = document.getElementById('decisionCatalogOnly').checked
+        ? FALLBACK_MODELS.filter(m => m.decision) : FALLBACK_MODELS;
+      if (!query) return models;
       const q = query.toLowerCase();
-      return FALLBACK_MODELS.filter(m =>
+      return models.filter(m =>
         m.name.toLowerCase().includes(q) || m.desc.toLowerCase().includes(q)
       );
     }
@@ -812,7 +843,7 @@
         const pullMatch = allText.match(/([\d.]+[KMB]?\s*Pulls?)/i);
         if (pullMatch) pulls = pullMatch[1];
 
-        models.push({ name, desc, pulls });
+        models.push({ name, desc, pulls, decision: /\bdecision\b/i.test(allText) });
       });
 
       // Strategy 2: search result IDs
@@ -861,6 +892,7 @@
               <div class="catalog-card-info">
                 <div class="catalog-card-name">
                   ${esc(m.name)}
+                  ${m.decision ? '<span class="decision-badge">decision</span>' : ''}
                   ${isInstalled ? '<span class="installed-check">&#10003;</span>' : ''}
                 </div>
                 ${m.desc ? `<div class="catalog-card-desc">${esc(m.desc)}</div>` : ''}
@@ -912,7 +944,9 @@
 
       // Fetch tags from ollama.com
       try {
-        const res = await fetch(`/ollama-library/${encodeURIComponent(modelName)}/tags`);
+        const res = await fetch(`/ollama-library/${encodeURIComponent(modelName)}/tags`, {
+          signal: AbortSignal.timeout(10000)
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const html = await res.text();
         const tags = parseTagsHTML(html, modelName);
@@ -1005,7 +1039,7 @@
       const dot = document.getElementById('statusDot');
       const text = document.getElementById('statusText');
       try {
-        const res = await fetch(API + '/tags');
+        const res = await fetch(API + '/tags', { signal: AbortSignal.timeout(5000) });
         if (res.ok) {
           dot.className = 'dot';
           text.textContent = 'Connected';
@@ -1016,10 +1050,37 @@
       }
       // Check running models
       try {
-        const res = await fetch(API + '/ps');
+        const res = await fetch(API + '/ps', { signal: AbortSignal.timeout(5000) });
         const data = await res.json();
         runningModels = new Set((data.models || []).map(m => m.name));
       } catch { runningModels = new Set(); }
+    }
+
+    // Check capabilities once per model digest; retry failed checks on refresh.
+    async function markDecisionModels(models) {
+      const cards = document.querySelectorAll('#modelsList .model-card');
+      await Promise.all(models.map(async (model, index) => {
+        try {
+          const key = model.digest || model.name;
+          if (!decisionCapabilities.has(key)) {
+            const res = await fetch(API + '/show', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ model: model.name }),
+              signal: AbortSignal.timeout(15000)
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            decisionCapabilities.set(key, data.capabilities?.includes('decision') === true);
+          }
+          if (decisionCapabilities.get(key)) {
+            const badge = document.createElement('span');
+            badge.className = 'decision-badge';
+            badge.textContent = 'decision';
+            cards[index].querySelector('.model-meta').append(badge);
+          }
+        } catch { /* Leave the model usable if its capabilities are unavailable. */ }
+      }));
     }
 
     // --- Load models ---
@@ -1027,7 +1088,8 @@
       const list = document.getElementById('modelsList');
       const countEl = document.getElementById('modelCount');
       try {
-        const res = await fetch(API + '/tags');
+        const res = await fetch(API + '/tags', { signal: AbortSignal.timeout(5000) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const models = data.models || [];
         installedModelNames = new Set(models.map(m => m.name));
@@ -1070,6 +1132,7 @@
               </div>
             </div>`;
         }).join('');
+        markDecisionModels(models);
       } catch {
         list.innerHTML = `
           <div class="empty-state">
@@ -1098,10 +1161,27 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, stream: true })
         });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let succeeded = false;
+        function processLine(line) {
+          if (!line.trim()) return;
+          const json = JSON.parse(line);
+          if (json.error) throw new Error(json.error);
+          if (json.status === 'success') succeeded = true;
+          if (json.total && json.completed) {
+            const pct = Math.round((json.completed / json.total) * 100);
+            updateProgress(json.status || 'Downloading...', pct);
+          } else {
+            updateProgress(json.status || 'Processing...', -1);
+          }
+        }
 
         while (true) {
           const { done, value } = await reader.read();
@@ -1111,24 +1191,10 @@
           const lines = buffer.split('\n');
           buffer = lines.pop();
 
-          for (const line of lines) {
-            if (!line.trim()) continue;
-            try {
-              const json = JSON.parse(line);
-              if (json.error) {
-                throw new Error(json.error);
-              }
-              if (json.total && json.completed) {
-                const pct = Math.round((json.completed / json.total) * 100);
-                updateProgress(json.status || 'Downloading...', pct);
-              } else {
-                updateProgress(json.status || 'Processing...', -1);
-              }
-            } catch (e) {
-              if (e.message && !e.message.includes('JSON')) throw e;
-            }
-          }
+          for (const line of lines) processLine(line);
         }
+        processLine(buffer + decoder.decode());
+        if (!succeeded) throw new Error('Download ended before Ollama confirmed success. Please retry.');
 
         toast(`Model "${name}" pulled successfully`, 'success');
         input.value = '';
