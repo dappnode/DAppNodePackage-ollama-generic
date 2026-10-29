@@ -19,7 +19,7 @@
     {
       "arg": "OLLAMA_VERSION",
       "repo": "ollama/ollama",
-      "version": "v0.40.12"
+      "version": "v0.40.13"
     }
   ],
   "version": "0.1.0"
