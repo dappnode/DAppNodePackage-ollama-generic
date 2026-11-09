@@ -11,6 +11,4 @@ services:
               capabilities: [ gpu ]
     build:
       context: ollama
-    container_name: ollama.ollama-nvidia.dnp.dappnode.eth
-  ui:
-    container_name: ui.ollama-nvidia.dnp.dappnode.eth
+  ui: {}

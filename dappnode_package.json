@@ -12,7 +12,6 @@
     "Models library": "https://ollama.com/library"
   },
   "mainService": "ollama",
-  "name": "ollama.dnp.dappnode.eth",
   "shortDescription": "Local LLM inference engine with GPU acceleration",
   "type": "service",
   "upstream": [
@@ -21,6 +20,5 @@
       "repo": "ollama/ollama",
       "version": "v0.40.12"
     }
-  ],
-  "version": "0.1.0"
+  ]
 }
