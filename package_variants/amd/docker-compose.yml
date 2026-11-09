@@ -9,6 +9,4 @@ services:
     devices:
       - /dev/kfd
       - /dev/dri
-    container_name: ollama.ollama-amd.dnp.dappnode.eth
-  ui:
-    container_name: ui.ollama-amd.dnp.dappnode.eth
+  ui: {}

@@ -5,7 +5,6 @@ services:
       context: ollama
       args:
         OLLAMA_VERSION: v0.40.12
-    container_name: ollama.ollama.dnp.dappnode.eth
     volumes:
       - ollama:/root/.ollama
     restart: unless-stopped
@@ -18,7 +17,6 @@ services:
   ui:
     build:
       context: ui
-    container_name: ui.ollama.dnp.dappnode.eth
     restart: unless-stopped
 volumes:
   ollama: {}
